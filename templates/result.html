@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ check_type }} - DXF Analysis Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --error-color: #dc2626;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .main-container {
+            min-height: 100vh;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            margin-bottom: 2rem;
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .header-content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .error-alert {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: var(--error-color);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-input {
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .block-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .fieldset {
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            background: #fafbfc;
+            position: relative;
+        }
+
+        .legend {
+            position: absolute;
+            top: -12px;
+            left: 1rem;
+            background: var(--surface);
+            padding: 0.25rem 0.75rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-row .form-input {
+            flex: 1;
+        }
+
+        .input-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .section {
+            margin: 2rem 0;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .download-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .download-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease;
+        }
+
+        .download-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .download-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .download-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .download-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .room-card, .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .room-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .room-icon {
+            background: var(--primary-color);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .room-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .text-items {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .text-item {
+            background: #f8fafc;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .back-navigation {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        .back-link:hover {
+            background: #f1f5f9;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+            
+            .header {
+                padding: 2rem 1rem;
+            }
+            
+            .header-content h1 {
+                font-size: 2rem;
+            }
+            
+            .room-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .download-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .input-row {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+  <div class="main-container">
+    <div class="header">
+      <div class="header-content">
+        <h1><i class="fas fa-drafting-compass"></i> {{ check_type }}</h1>
+        <p class="subtitle">Advanced DXF Analysis & Room Dimension Validation</p>
+      </div>
+    </div>
+
+    <div class="content">
+      {% if error %}
+        <div class="error-alert">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ error }}
+        </div>
+      {% endif %}
+
+      <form action="/upload-{{ check_type | lower | replace(' ', '-') }}" method="post" enctype="multipart/form-data" class="upload-form">
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-file-upload"></i> Select DXF File
+          </label>
+          <input type="file" name="file" accept=".dxf" required class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-hashtag"></i> Number of Rooms to Check
+          </label>
+          <input type="number" name="room_count" id="roomCount" min="1" required class="form-input">
+        </div>
+
+        <button type="button" onclick="generateRoomInputs()" class="btn btn-secondary">
+          <i class="fas fa-plus"></i> Generate Room Inputs
+        </button>
+
+        <div id="roomInputsContainer"></div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
+          <i class="fas fa-rocket"></i> Analyze DXF File
+        </button>
+      </form>
+
+      {% if filename %}
+        <div class="section">
+          <h2 class="section-title">
+            <i class="fas fa-file-alt"></i> Analysis Results
+          </h2>
+          
+          <div class="stats-grid">
+            {% if rooms %}
+            <div class="stat-card">
+              <div class="stat-number">{{ rooms|length }}</div>
+              <div class="stat-label">Rooms Extracted</div>
+            </div>
+            {% endif %}
+            
+            {% if submitted_rooms %}
+            <div class="stat-card">
+              <div class="stat-number">{{ submitted_rooms|length }}</div>
+              <div class="stat-label">Rooms Submitted</div>
+            </div>
+            {% endif %}
+            
+            {% if matches %}
+            <div class="stat-card">
+              <div class="stat-number">{{ matches|length }}</div>
+              <div class="stat-label">Successful Matches</div>
+            </div>
+            {% endif %}
+
+            {% if available_blocks %}
+            <div class="stat-card">
+              <div class="stat-number">{{ available_blocks|length }}</div>
+              <div class="stat-label">Available Blocks</div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="download-section">
+            <h3 class="section-title">
+              <i class="fas fa-download"></i> Download Files
+            </h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+              Access all generated files and reports from your analysis
+            </p>
+            
+            <div class="download-grid">
+              {% if client_file_link %}
+              <div class="download-card">
+                <div class="download-icon">
+                  <i class="fas fa-file-code"></i>
+                </div>
+                <div class="download-title">Raw Data</div>
+                <div class="download-description">Your original uploaded DXF file for reference</div>
+                <a href="{{ client_file_link }}" class="btn btn-secondary" download>
+                  <i class="fas fa-download"></i> Download
+                </a>
+              </div>
+              {% endif %}
+
+              {% if reference_link %}
+              <div class="download-card">
+                <div class="download-icon">
+                  <i class="fas fa-palette"></i>
+                </div>
+                <div class="download-title">User Validation</div>
+                <div class="download-description">DXF file with your input rooms highlighted in color</div>
+                <a href="{{ reference_link }}" class="btn btn-success" download>
+                  <i class="fas fa-download"></i> Download
+                </a>
+              </div>
+              {% endif %}
+
+              {% if download_link %}
+              <div class="download-card">
+                <div class="download-icon">
+                  <i class="fas fa-edit"></i>
+                </div>
+                <div class="download-title">System DXF</div>
+                <div class="download-description">Modified DXF file with analysis results and annotations</div>
+                <a href="{{ download_link }}" class="btn btn-primary" download>
+                  <i class="fas fa-download"></i> Download
+                </a>
+              </div>
+              {% endif %}
+
+              {% if excel_link %}
+              <div class="download-card">
+                <div class="download-icon">
+                  <i class="fas fa-table"></i>
+                </div>
+                <div class="download-title">Complete Report</div>
+                <div class="download-description">Detailed Excel report with match results and comparisons</div>
+                <a href="{{ excel_link }}" class="btn btn-warning" download>
+                  <i class="fas fa-download"></i> Download
+                </a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if rooms %}
+            <div class="section">
+              <h3 class="section-title">
+                <i class="fas fa-home"></i> Extracted Rooms & Text Analysis
+              </h3>
+              <div class="room-grid">
+                {% for room in rooms %}
+                  <div class="room-card">
+                    <div class="room-header">
+                      <div class="room-icon">
+                        <i class="fas fa-cube"></i>
+                      </div>
+                      <div>
+                        <h4 style="margin: 0; color: var(--text-primary);">{{ room.BlockName or 'Room ' + loop.index|string }}</h4>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">
+                          Block: {{ room.BlockName or 'N/A' }} | Room {{ loop.index }}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div class="room-info">
+                      <div class="info-item">
+                        <span class="info-label">Length</span>
+                        <span class="info-value">{{ room.LengthStr }}</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Breadth</span>
+                        <span class="info-value">{{ room.BreadthStr }}</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Area</span>
+                        <span class="info-value">{{ "%.0f"|format(room.Area) }} mm²</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Texts Found</span>
+                        <span class="info-value">{{ room.texts|length if room.texts else 0 }}</span>
+                      </div>
+                    </div>
+
+                    {% if room.texts %}
+                      <div style="margin-top: 1rem;">
+                        <h5 style="color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.9rem;">
+                          <i class="fas fa-font"></i> Text Content
+                        </h5>
+                        <div class="text-items">
+                          {% for t in room.texts %}
+                            <div class="text-item">
+                              <div style="font-weight: 600; margin-bottom: 0.25rem;">{{ t.original }}</div>
+                              {% if t.cleaned != t.original %}
+                                <div style="color: var(--text-secondary); font-size: 0.8rem;">Cleaned: {{ t.cleaned }}</div>
+                              {% endif %}
+                              <div style="color: var(--text-secondary); font-size: 0.8rem;">Position: {{ t.Position }}</div>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    {% else %}
+                      <div style="text-align: center; color: var(--text-secondary); font-style: italic; margin-top: 1rem;">
+                        <i class="fas fa-info-circle"></i> No text found in this room
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+
+          {% if submitted_rooms %}
+            <div class="section">
+              <h3 class="section-title">
+                <i class="fas fa-user-edit"></i> Your Submitted Dimensions
+              </h3>
+              <div class="room-grid">
+                {% for room in submitted_rooms %}
+                  <div class="card">
+                    <div class="room-header">
+                      <div class="room-icon">
+                        <i class="fas fa-ruler-combined"></i>
+                      </div>
+                      <div>
+                        <h4 style="margin: 0; color: var(--text-primary); text-transform: capitalize;">{{ room.name }}</h4>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">
+                          Target Block: {{ room.block_name or 'Any' }} | Input {{ loop.index }}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div class="room-info">
+                      <div class="info-item">
+                        <span class="info-label">Width</span>
+                        <span class="info-value">{{ room.width_feet }}'{{ room.width_inches }}"</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Height</span>
+                        <span class="info-value">{{ room.height_feet }}'{{ room.height_inches }}"</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Width (mm)</span>
+                        <span class="info-value">{{ "%.1f"|format(room.width_mm) }}</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Height (mm)</span>
+                        <span class="info-value">{{ "%.1f"|format(room.height_mm) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="back-navigation">
+      <a href="/home" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Home
+      </a>
+    </div>
+  </div>
+
+  <script>
+    function generateRoomInputs() {
+      const count = parseInt(document.getElementById("roomCount").value);
+      const container = document.getElementById("roomInputsContainer");
+      
+      if (!count || count < 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = '';
+      
+      for (let i = 1; i <= count; i++) {
+        const fieldset = document.createElement("div");
+        fieldset.className = "fieldset";
+        
+        fieldset.innerHTML = `
+          <div class="legend">
+            <i class="fas fa-home"></i> Room ${i}
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-layer-group"></i> Block Name (Required)
+            </label>
+            <input type="text" name="block_name_${i}" required class="form-input" placeholder="e.g., UNIT_A, FLOOR_PLAN_1">
+            <div class="block-info">
+              <i class="fas fa-info-circle"></i>
+              <span>Enter the exact block name where this room is located (case-sensitive)</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-tag"></i> Room Name
+            </label>
+            <input type="text" name="room_name_${i}" required class="form-input" placeholder="e.g., Living Room, Bedroom">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-arrows-alt-h"></i> Width Dimensions
+            </label>
+            <div class="input-row">
+              <input type="number" name="width_feet_${i}" placeholder="Feet" min="0" required class="form-input">
+              <span class="input-label">ft</span>
+              <input type="number" name="width_inches_${i}" placeholder="Inches" min="0" max="11" required class="form-input">
+              <span class="input-label">in</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fas fa-arrows-alt-v"></i> Height Dimensions
+            </label>
+            <div class="input-row">
+              <input type="number" name="height_feet_${i}" placeholder="Feet" min="0" required class="form-input">
+              <span class="input-label">ft</span>
+              <input type="number" name="height_inches_${i}" placeholder="Inches" min="0" max="11" required class="form-input">
+              <span class="input-label">in</span>
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(fieldset);
+      }
+    }
+
+    // Add smooth animations
+    document.addEventListener('DOMContentLoaded', function() {
+      const cards = document.querySelectorAll('.room-card, .card, .download-card');
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+          }
+        });
+      });
+
+      cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+        observer.observe(card);
+      });
+    });
+  </script>
+</body>
+</html>
