@@ -97,6 +97,51 @@ async def self_check(request: Request):
         "excel_link": None,
         "client_file_link": None
     })
+    
+# Add a new endpoint to analyze DXF and return room data
+@app.post("/api/analyze-dxf")
+async def analyze_dxf_file_api(file: UploadFile = File(...)):
+    """
+    API endpoint to analyze DXF file and return room information
+    """
+    if not file.filename.lower().endswith(".dxf"):
+        return {"success": False, "error": "Only .dxf files are supported."}
+    
+    # Read file content
+    client_content = await file.read()
+    
+    # Create temporary file for processing
+    with tempfile.NamedTemporaryFile(suffix=".dxf", delete=False) as temp_file:
+        temp_file.write(client_content)
+        temp_path = temp_file.name
+    
+    try:
+        # Analyze DXF file and store global variables
+        print(f"🔄 Analyzing DXF file: {file.filename}")
+        analysis_result = analyze_dxf_file(temp_path, is_self_check=True)
+        
+        if analysis_result:
+            print(f"✅ Analysis completed - {analysis_result['summary']['total_rooms']} rooms found")
+            global_data = get_self_check_globals()
+            
+            return {
+                "success": True,
+                "total_rooms": global_data["total_rooms"],
+                "room_info": global_data["room_info"],
+                "unit_names": get_all_unit_names(),
+                "room_names": get_all_room_names()
+            }
+        else:
+            print("❌ Analysis failed")
+            return {"success": False, "error": "Failed to analyze DXF file"}
+            
+    except Exception as e:
+        print(f"❌ Error analyzing DXF: {str(e)}")
+        return {"success": False, "error": f"Error analyzing file: {str(e)}"}
+    
+    finally:
+        # Clean up temporary file
+        os.unlink(temp_path)
 
 from fastapi import UploadFile, File, Form
 
@@ -956,8 +1001,7 @@ async def download_file(filename: str):
     return HTMLResponse(f"<h3>File not found: {filename}</h3>", status_code=404)
 
 
-init_db()
-
+ 
 
 
 
