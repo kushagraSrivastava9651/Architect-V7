@@ -1299,5 +1299,4 @@ def reset_self_check_globals():
     }
 
 
-
 init_db()

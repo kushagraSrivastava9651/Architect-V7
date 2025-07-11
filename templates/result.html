@@ -245,6 +245,104 @@
             color: var(--primary-color);
         }
 
+        /* Room card remove button styles */
+.legend {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.remove-room-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.remove-room-btn:hover {
+    background: #dc2626;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.remove-room-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+/* Animation for room cards */
+.fieldset {
+    transition: all 0.3s ease;
+    transform-origin: center;
+}
+
+.fieldset.removing {
+    transform: translateX(-100%);
+    opacity: 0;
+}
+
+.fieldset.adding {
+    transform: translateX(100%);
+    opacity: 0;
+}
+
+/* Update generate button text dynamically */
+.btn-secondary.has-rooms::after {
+    content: " Add New Room";
+}
+
+.btn-secondary:not(.has-rooms)::after {
+    content: " Generate Room Inputs";
+}
+
+/* Notification styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    max-width: 400px;
+}
+
+.notification.success {
+    background-color: #10b981;
+}
+
+.notification.error {
+    background-color: #ef4444;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .legend {
+        font-size: 14px;
+    }
+    
+    .remove-room-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+}
         .stat-label {
             color: var(--text-secondary);
             font-weight: 500;
@@ -443,9 +541,12 @@
           <input type="number" name="room_count" id="roomCount" min="1" required class="form-input">
         </div>
 
-        <button type="button" onclick="generateRoomInputs()" class="btn btn-secondary">
-          <i class="fas fa-plus"></i> Generate Room Inputs
-        </button>
+        <button type="button" id="generateRoomBtn" class="btn btn-secondary">
+
+    <i class="fas fa-plus"></i> 
+    <span class="btn-text">Generate Room Inputs</span>
+</button>
+
 
         <div id="roomInputsContainer"></div>
 
@@ -674,98 +775,25 @@
     </div>
   </div>
 
-  <script>
-    function generateRoomInputs() {
-      const count = parseInt(document.getElementById("roomCount").value);
-      const container = document.getElementById("roomInputsContainer");
-      
-      if (!count || count < 1) {
-        container.innerHTML = '';
-        return;
-      }
-
-      container.innerHTML = '';
-      
-      for (let i = 1; i <= count; i++) {
-        const fieldset = document.createElement("div");
-        fieldset.className = "fieldset";
-        
-        fieldset.innerHTML = `
-          <div class="legend">
-            <i class="fas fa-home"></i> Room ${i}
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">
-              <i class="fas fa-layer-group"></i> Block Name (Required)
-            </label>
-            <input type="text" name="block_name_${i}" required class="form-input" placeholder="e.g., UNIT_A, FLOOR_PLAN_1">
-            <div class="block-info">
-              <i class="fas fa-info-circle"></i>
-              <span>Enter the exact block name where this room is located (case-sensitive)</span>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">
-              <i class="fas fa-tag"></i> Room Name
-            </label>
-            <input type="text" name="room_name_${i}" required class="form-input" placeholder="e.g., Living Room, Bedroom">
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">
-              <i class="fas fa-arrows-alt-h"></i> Width Dimensions
-            </label>
-            <div class="input-row">
-              <input type="number" name="width_feet_${i}" placeholder="Feet" min="0" required class="form-input">
-              <span class="input-label">ft</span>
-              <input type="number" name="width_inches_${i}" placeholder="Inches" min="0" max="11" required class="form-input">
-              <span class="input-label">in</span>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">
-              <i class="fas fa-arrows-alt-v"></i> Height Dimensions
-            </label>
-            <div class="input-row">
-              <input type="number" name="height_feet_${i}" placeholder="Feet" min="0" required class="form-input">
-              <span class="input-label">ft</span>
-              <input type="number" name="height_inches_${i}" placeholder="Inches" min="0" max="11" required class="form-input">
-              <span class="input-label">in</span>
-            </div>
-          </div>
-        `;
-        
-        container.appendChild(fieldset);
-      }
-    }
-
-    // Add smooth animations
-    document.addEventListener('DOMContentLoaded', function() {
-      const cards = document.querySelectorAll('.room-card, .card, .download-card');
-      
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-          }
-        });
-      });
-
-      cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
-        observer.observe(card);
-      });
-    });
-  </script>
   <!-- Add this JavaScript section before the closing </body> tag -->
 <script>
 let analyzedRoomData = null;
+
+
+
+function updateGenerateButtonText() {
+    const button = document.getElementById('generateRoomBtn');
+    const btnText = button.querySelector('.btn-text');
+    const existingRooms = document.getElementById("roomInputsContainer").querySelectorAll('.fieldset').length;
+    
+    if (existingRooms > 0) {
+        btnText.textContent = 'Add New Room';
+        button.classList.add('has-rooms');
+    } else {
+        btnText.textContent = 'Generate Room Inputs';
+        button.classList.remove('has-rooms');
+    }
+}
 
 // Modified function to handle file upload and analysis
 async function handleFileUpload(event) {
@@ -820,6 +848,7 @@ async function handleFileUpload(event) {
 }
 
 // Modified generateRoomInputs function
+// Updated generateRoomInputs function
 function generateRoomInputs() {
     const count = parseInt(document.getElementById("roomCount").value);
     const container = document.getElementById("roomInputsContainer");
@@ -829,70 +858,206 @@ function generateRoomInputs() {
         return;
     }
 
+    // Clear existing content
     container.innerHTML = '';
     
     for (let i = 1; i <= count; i++) {
-        const fieldset = document.createElement("div");
-        fieldset.className = "fieldset";
-        
-        // Get room data if available
-        const roomData = analyzedRoomData && analyzedRoomData.room_info[i-1] ? analyzedRoomData.room_info[i-1] : null;
-        
-        fieldset.innerHTML = `
-            <div class="legend">
-                <i class="fas fa-home"></i> Room ${i}
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">
-                    <i class="fas fa-layer-group"></i> Block Name (Unit Name)
-                </label>
-                <input type="text" name="block_name_${i}" required class="form-input" 
-                       value="${roomData ? roomData.unit_name : ''}" 
-                       placeholder="e.g., UNIT_A, FLOOR_PLAN_1">
-                <div class="block-info">
-                    <i class="fas fa-info-circle"></i>
-                    <span>Auto-filled from DXF analysis</span>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">
-                    <i class="fas fa-tag"></i> Room Name
-                </label>
-                <input type="text" name="room_name_${i}" required class="form-input" 
-                       value="${roomData ? roomData.room_name : ''}" 
-                       placeholder="e.g., Living Room, Bedroom">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">
-                    <i class="fas fa-arrows-alt-h"></i> Width Dimensions
-                </label>
-                <div class="input-row">
-                    <input type="number" name="width_feet_${i}" placeholder="Feet" min="0" required class="form-input">
-                    <span class="input-label">ft</span>
-                    <input type="number" name="width_inches_${i}" placeholder="Inches" min="0" max="11" required class="form-input">
-                    <span class="input-label">in</span>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">
-                    <i class="fas fa-arrows-alt-v"></i> Height Dimensions
-                </label>
-                <div class="input-row">
-                    <input type="number" name="height_feet_${i}" placeholder="Feet" min="0" required class="form-input">
-                    <span class="input-label">ft</span>
-                    <input type="number" name="height_inches_${i}" placeholder="Inches" min="0" max="11" required class="form-input">
-                    <span class="input-label">in</span>
-                </div>
-            </div>
-        `;
-        
-        container.appendChild(fieldset);
+        createRoomCard(i, container);
     }
 }
+
+// New function to create individual room cards
+function createRoomCard(roomNumber, container) {
+    const fieldset = document.createElement("div");
+    fieldset.className = "fieldset";
+    fieldset.setAttribute("data-room-number", roomNumber);
+    
+    // Get room data if available
+    const roomData = analyzedRoomData && analyzedRoomData.room_info[roomNumber-1] ? analyzedRoomData.room_info[roomNumber-1] : null;
+    
+    fieldset.innerHTML = `
+        <div class="legend">
+            <i class="fas fa-home"></i> Room ${roomNumber}
+            <button type="button" class="remove-room-btn" onclick="removeRoomCard(this)" title="Remove this room">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">
+                <i class="fas fa-layer-group"></i> Block Name (Unit Name)
+            </label>
+            <input type="text" name="block_name_${roomNumber}" required class="form-input" 
+                   value="${roomData ? roomData.unit_name : ''}" 
+                   placeholder="e.g., UNIT_A, FLOOR_PLAN_1">
+            <div class="block-info">
+                <i class="fas fa-info-circle"></i>
+                <span>Auto-filled from DXF analysis</span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">
+                <i class="fas fa-tag"></i> Room Name
+            </label>
+            <input type="text" name="room_name_${roomNumber}" required class="form-input" 
+                   value="${roomData ? roomData.room_name : ''}" 
+                   placeholder="e.g., Living Room, Bedroom">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">
+                <i class="fas fa-arrows-alt-h"></i> Width Dimensions
+            </label>
+            <div class="input-row">
+                <input type="number" name="width_feet_${roomNumber}" placeholder="Feet" min="0" required class="form-input">
+                <span class="input-label">ft</span>
+                <input type="number" name="width_inches_${roomNumber}" placeholder="Inches" min="0" max="11" required class="form-input">
+                <span class="input-label">in</span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">
+                <i class="fas fa-arrows-alt-v"></i> Height Dimensions
+            </label>
+            <div class="input-row">
+                <input type="number" name="height_feet_${roomNumber}" placeholder="Feet" min="0" required class="form-input">
+                <span class="input-label">ft</span>
+                <input type="number" name="height_inches_${roomNumber}" placeholder="Inches" min="0" max="11" required class="form-input">
+                <span class="input-label">in</span>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(fieldset);
+}
+
+// Function to remove a room card
+function removeRoomCard(button) {
+    const roomCard = button.closest('.fieldset');
+    const container = document.getElementById("roomInputsContainer");
+    
+    // Add removal animation
+    roomCard.style.transform = 'translateX(-100%)';
+    roomCard.style.opacity = '0';
+    
+    setTimeout(() => {
+        roomCard.remove();
+        
+        // Update room numbers and input names
+        updateRoomNumbers();
+        
+        // Update room count input
+        const remainingRooms = container.querySelectorAll('.fieldset').length;
+        document.getElementById("roomCount").value = remainingRooms;
+        
+        showNotification('🗑️ Room removed successfully', 'success');
+    }, 300);
+}
+
+// Function to update room numbers after removal
+function updateRoomNumbers() {
+    const container = document.getElementById("roomInputsContainer");
+    const roomCards = container.querySelectorAll('.fieldset');
+    
+    roomCards.forEach((card, index) => {
+        const newRoomNumber = index + 1;
+        
+        // Update legend
+        const legend = card.querySelector('.legend');
+        legend.innerHTML = `
+            <i class="fas fa-home"></i> Room ${newRoomNumber}
+            <button type="button" class="remove-room-btn" onclick="removeRoomCard(this)" title="Remove this room">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        // Update input names
+        const inputs = card.querySelectorAll('input[name^="block_name_"], input[name^="room_name_"], input[name^="width_feet_"], input[name^="width_inches_"], input[name^="height_feet_"], input[name^="height_inches_"]');
+        inputs.forEach(input => {
+            const currentName = input.name;
+            const baseName = currentName.replace(/_\d+$/, '');
+            input.name = `${baseName}_${newRoomNumber}`;
+        });
+        
+        // Update data attribute
+        card.setAttribute("data-room-number", newRoomNumber);
+    });
+}
+
+// Function to add a new room card
+function addNewRoom() {
+    const container = document.getElementById("roomInputsContainer");
+    const currentRoomCount = container.querySelectorAll('.fieldset').length;
+    const newRoomNumber = currentRoomCount + 1;
+    
+    // Create new room card
+    createRoomCard(newRoomNumber, container);
+    
+    // Update room count input
+    document.getElementById("roomCount").value = newRoomNumber;
+    
+    // Scroll to the new card
+    const newCard = container.lastElementChild;
+    newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Add entrance animation
+    newCard.style.transform = 'translateX(100%)';
+    newCard.style.opacity = '0';
+    
+    setTimeout(() => {
+        newCard.style.transform = 'translateX(0)';
+        newCard.style.opacity = '1';
+    }, 100);
+    
+    showNotification('✅ New room added successfully', 'success');
+}
+
+// Update the existing DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener to file input
+    const fileInput = document.querySelector('input[type="file"][name="file"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileUpload);
+    }
+    
+    // Update the generate button to also work as "Add New Room" button
+    const generateButton = document.querySelector('button[onclick="generateRoomInputs()"]');
+    if (generateButton) {
+        generateButton.addEventListener('click', function() {
+            const roomCount = parseInt(document.getElementById("roomCount").value);
+            const existingRooms = document.getElementById("roomInputsContainer").querySelectorAll('.fieldset').length;
+            
+            if (existingRooms > 0) {
+                // If rooms already exist, add one more
+                addNewRoom();
+            } else {
+                // If no rooms exist, generate initial rooms
+                generateRoomInputs();
+            }
+        });
+    }
+    
+    // Existing animation code...
+    const cards = document.querySelectorAll('.room-card, .card, .download-card');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    });
+
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+        observer.observe(card);
+    });
+});
 
 // Function to show notifications
 function showNotification(message, type) {
@@ -940,7 +1105,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (fileInput) {
         fileInput.addEventListener('change', handleFileUpload);
     }
-    
+    // Fix the generate button event listener
+    const generateButton = document.getElementById('generateRoomBtn');
+    if (generateButton) {
+        generateButton.addEventListener('click', function() {
+            const roomCount = parseInt(document.getElementById("roomCount").value);
+            const existingRooms = document.getElementById("roomInputsContainer").querySelectorAll('.fieldset').length;
+            
+            if (existingRooms > 0) {
+                // If rooms already exist, add one more
+                addNewRoom();
+            } else {
+                // If no rooms exist, generate initial rooms
+                generateRoomInputs();
+            }
+        });
+    }
     // Existing animation code...
     const cards = document.querySelectorAll('.room-card, .card, .download-card');
     
