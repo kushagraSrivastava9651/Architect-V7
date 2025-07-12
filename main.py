@@ -22,6 +22,9 @@ from helper import (extract_all_entities,entity_to_geometry,extract_block_text_i
                     determine_room_type_by_entities_ultra_fixed,assign_entities_to_rooms,check_text_within_rooms,clean_room_name,
                     analyze_multi_room_entities)
 
+
+from database import store_form_data
+
 import uuid
 import tempfile
 import io
@@ -915,6 +918,7 @@ async def upload_dxf_with_block(
         os.unlink(temp_path)
         if 'updated_temp_path' in locals():
             os.unlink(updated_temp_path)
+
 
 
  

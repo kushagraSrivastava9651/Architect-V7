@@ -1,8 +1,6 @@
 # Add these imports at the top of your file
 from datetime import datetime
 import sqlite3
-
-# Database setup function - call this once during app startup
 def init_database():
     """Initialize the database with required tables"""
     conn = sqlite3.connect('dxf_analysis.db')
