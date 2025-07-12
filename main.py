@@ -16,6 +16,7 @@ import math
 from ezdxf.math import Matrix44, Vec3
 from shapely.geometry import Polygon, Point
 from shapely.affinity import affine_transform
+from database import store_form_data
 
 from helper import (extract_all_entities,entity_to_geometry,extract_block_text_info_for_insert,
                     determine_room_type_by_entities_ultra_fixed,assign_entities_to_rooms,check_text_within_rooms,clean_room_name,
@@ -756,6 +757,7 @@ def mm_to_feet_inches_label(mm):
         feet += 1
         inch_rem = 0
     return f"{feet}'{inch_rem}\""
+
 @app.post("/upload-{check_type}", response_class=HTMLResponse)
 async def upload_dxf_with_block(
     request: Request,
@@ -834,6 +836,15 @@ async def upload_dxf_with_block(
                 "block_name": block_name
             })
 
+        # NEW: Store form data in database
+        try:
+            user_name = form.get("user_name", "Anonymous")  # Get user name from form
+            form_submission_id = store_form_data(user_name, file.filename, room_count, submitted_rooms)
+            print(f"✅ Form data stored in database with ID: {form_submission_id}")
+        except Exception as e:
+            print(f"❌ Error storing form data: {str(e)}")
+            # Continue processing even if database storage fails
+
         # Use the modified matching function
         matches, unmatched = match_user_rooms_to_dxf(submitted_rooms, rooms)
 
@@ -906,46 +917,7 @@ async def upload_dxf_with_block(
             os.unlink(updated_temp_path)
 
 
-# NEW: Add endpoint to get global check data via API
-@app.get("/api/self-check-globals")
-async def get_self_check_data():
-    """
-    API endpoint to retrieve current self-check global variables
-    """
-    return {
-        "success": True,
-        "data": get_self_check_globals(),
-        "unit_names": get_all_unit_names(),
-        "room_names": get_all_room_names()
-    }
-
-
-# NEW: Add endpoint to reset global check data
-@app.post("/api/reset-self-check-globals")
-async def reset_self_check_data():
-    """
-    API endpoint to reset self-check global variables
-    """
-    reset_self_check_globals()
-    return {
-        "success": True,
-        "message": "Self-check global variables reset successfully"
-    }
-
-
-# NEW: Add endpoint to get room info by unit
-@app.get("/api/self-check-rooms/{unit_name}")
-async def get_unit_rooms(unit_name: str):
-    """
-    API endpoint to get all rooms for a specific unit
-    """
-    rooms = get_room_info_by_unit(unit_name)
-    return {
-        "success": True,
-        "unit_name": unit_name,
-        "rooms": rooms,
-        "room_count": len(rooms)
-    }
+ 
 
 @app.get("/download/reference/{history_id}")
 async def download_reference_file(history_id: int):
