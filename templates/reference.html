@@ -2,228 +2,246 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Reference Check - DWG Validator</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reference Check</title>
     <style>
         body {
-            font-family: "Segoe UI", sans-serif;
-            background-color: #f7f9fc;
-            color: #333;
-            margin: 0;
-            padding: 0;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
         }
-
         .container {
             max-width: 800px;
-            margin: 40px auto;
-            background: #fff;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        h2 {
+        h1 {
+            color: #333;
             text-align: center;
-            font-size: 28px;
             margin-bottom: 30px;
-            color: #2b4162;
         }
-
-        .form-box {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+        .form-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
+        .form-section h3 {
+            margin-top: 0;
+            color: #555;
         }
-
-        label {
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        input[type="file"] {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            background: #f1f1f1;
-        }
-
-        .button {
-            padding: 12px 20px;
-            background-color: #2563eb;
-            color: white;
-            font-weight: 500;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            text-align: center;
-            transition: background-color 0.25s ease;
-            font-size: 15px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .button:hover {
-            background-color: #1e40af;
-        }
-
-        .error-message {
-            color: red;
-            margin-top: 10px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .results-box {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-        }
-
-        h3, h4 {
-            color: #2b4162;
-            margin-bottom: 12px;
-        }
-
-        .mismatch-list {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .mismatch-item {
-            background: #ffecec;
-            border-left: 4px solid #e74c3c;
-            padding: 10px;
-            margin-bottom: 8px;
-            border-radius: 4px;
-        }
-
-        .match-success {
-            background: #eafbea;
-            color: #2e7d32;
-            border-left: 4px solid #4caf50;
-            padding: 10px;
-            border-radius: 4px;
+        .file-input {
             margin-bottom: 15px;
         }
-
-        .download-buttons {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
+        .file-input label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .file-input input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .db-selection {
+            margin-bottom: 20px;
+        }
+        .db-selection label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .db-selection select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .room-info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .room-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .submit-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .results h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        .download-links {
             margin-top: 20px;
         }
-
-        .back-link {
-            text-align: center;
-            margin-top: 30px;
-        }
-
-        .back-link a {
-            color: #555;
+        .download-links a {
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
             text-decoration: none;
-            font-size: 16px;
+            border-radius: 4px;
         }
-
+        .download-links a:hover {
+            background: #0056b3;
+        }
+        .back-link {
+            margin-bottom: 20px;
+        }
+        .back-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
         .back-link a:hover {
             text-decoration: underline;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                margin: 20px;
-                padding: 20px;
-            }
-
-            .button {
-                width: 100%;
-                font-size: 14px;
-            }
-
-            .download-buttons {
-                flex-direction: column;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>📐 Reference Check</h2>
-
-        <form action="/reference-check" method="post" enctype="multipart/form-data" class="form-box">
-            <div class="form-group">
-                <label for="ref_file">📥 Upload <strong>Reference DXF</strong>:</label>
-                <input type="file" id="ref_file" name="ref_file" accept=".dxf" required>
-            </div>
-
-            <div class="form-group">
-                <label for="client_file">📥 Upload <strong>Client DXF</strong>:</label>
-                <input type="file" id="client_file" name="client_file" accept=".dxf" required>
-            </div>
-
-            <button type="submit" class="button">🔍 Compare</button>
-        </form>
-
-        {% if error %}
-            <p class="error-message">{{ error }}</p>
-        {% endif %}
-
-        {% if download_link %}
-        <div class="results-box">
-            <h3>✅ Reference Comparison Complete</h3>
-
-            {% if room_mismatches is not none %}
-                <h4>📏 Room Dimension Mismatches</h4>
-                {% if room_mismatches %}
-                    <ul class="mismatch-list">
-                        {% for mismatch in room_mismatches %}
-                            <li class="mismatch-item">❌ Room size {{ mismatch[0] }} x {{ mismatch[1] }} mm not in reference</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="match-success">✅ All room dimensions matched with reference.</p>
-                {% endif %}
-            {% endif %}
-
-            {% if door_mismatches is not none %}
-                <h4>🚪 Door Length Mismatches</h4>
-                {% if door_mismatches %}
-                    <ul class="mismatch-list">
-                        {% for mismatch in door_mismatches %}
-                            <li class="mismatch-item">❌ Door length {{ mismatch }} mm not in reference</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="match-success">✅ All door lengths matched with reference.</p>
-                {% endif %}
-            {% endif %}
-
-            {% if not room_mismatches and not door_mismatches %}
-                <p class="match-success">🎉 No mismatches found. Your files are fully aligned!</p>
-            {% endif %}
-
-            <div class="download-buttons">
-                <a href="{{ download_link }}" download class="button">📤 Visualized DXF</a>
-                {% if excel_link %}
-                    <a href="{{ excel_link }}" download class="button">📊 Excel Report</a>
-                {% endif %}
-                {% if client_file_link %}
-                    <a href="{{ client_file_link }}" download class="button">📂 Client DXF</a>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
         <div class="back-link">
-            <a href="/home">⬅️ Back to Home</a>
+            <a href="/home">← Back to Home</a>
         </div>
+        
+        <h1>Reference Check</h1>
+        
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+        
+        <form id="referenceForm" method="post" enctype="multipart/form-data">
+            <div class="form-section">
+                <h3>Upload DXF File</h3>
+                <div class="file-input">
+                    <label for="dxf_file">Select DXF File:</label>
+                    <input type="file" id="dxf_file" name="dxf_file" accept=".dxf" required>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3>Select Reference Data</h3>
+                <div class="db-selection">
+                    <label for="reference_data">Select Saved Form Data:</label>
+                    <select id="reference_data" name="reference_data_id" required>
+                        <option value="">-- Select Reference Data --</option>
+                        {% for submission in form_submissions %}
+                        <option value="{{ submission.id }}">
+                            {{ submission.user_name }} - {{ submission.file_name }} 
+                            ({{ submission.room_count }} rooms) - {{ submission.created_at }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div id="selectedRoomInfo" class="room-info" style="display: none;">
+                    <h4>Selected Reference Rooms:</h4>
+                    <div id="roomList"></div>
+                </div>
+            </div>
+            
+            <button type="submit" class="submit-btn">Process Reference Check</button>
+        </form>
+        
+        {% if results %}
+        <div class="results">
+            <h3>Reference Check Results</h3>
+            <p><strong>File:</strong> {{ filename }}</p>
+            <p><strong>Total Rooms Found:</strong> {{ results.total_rooms }}</p>
+            <p><strong>Matched Rooms:</strong> {{ results.matched_count }}</p>
+            <p><strong>Unmatched Rooms:</strong> {{ results.unmatched_count }}</p>
+            
+            {% if download_link %}
+            <div class="download-links">
+                <a href="{{ download_link }}" target="_blank">Download Standard Updated DXF</a>
+                <a href="{{ reference_link }}" target="_blank">Download User Input Colored DXF</a>
+                <a href="{{ excel_link }}" target="_blank">Download Excel Report</a>
+                <a href="{{ client_file_link }}" target="_blank">Download Original DXF</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
+
+    <script>
+        // Show room info when reference data is selected
+        document.getElementById('reference_data').addEventListener('change', async function() {
+            const selectedId = this.value;
+            const roomInfoDiv = document.getElementById('selectedRoomInfo');
+            const roomListDiv = document.getElementById('roomList');
+            
+            if (selectedId) {
+                try {
+                    const response = await fetch(`/api/get-form-data/${selectedId}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        roomListDiv.innerHTML = '';
+                        data.rooms.forEach(room => {
+                            const roomItem = document.createElement('div');
+                            roomItem.className = 'room-item';
+                            roomItem.innerHTML = `
+                                <strong>${room.unit_name}</strong> - ${room.room_name}<br>
+                                Dimensions: ${room.width_feet}'${room.width_inches}" x ${room.height_feet}'${room.height_inches}"
+                            `;
+                            roomListDiv.appendChild(roomItem);
+                        });
+                        roomInfoDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Error fetching room data:', error);
+                }
+            } else {
+                roomInfoDiv.style.display = 'none';
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('referenceForm').addEventListener('submit', function(e) {
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.textContent = 'Processing...';
+            submitBtn.disabled = true;
+        });
+    </script>
 </body>
 </html>

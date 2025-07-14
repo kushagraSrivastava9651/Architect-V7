@@ -23,7 +23,7 @@ from helper import (extract_all_entities,entity_to_geometry,extract_block_text_i
                     analyze_multi_room_entities)
 
 
-from database import store_form_data
+from database import store_form_data,init_database,get_all_form_submissions,get_form_data_by_id
 
 import uuid
 import tempfile
@@ -153,122 +153,162 @@ from Referece_check.reference import extract_room_dimensions, extract_doors, com
 
 @app.get("/reference-check", response_class=HTMLResponse)
 async def reference_check_page(request: Request):
+    """Display reference check page with form submissions"""
+    form_submissions = get_all_form_submissions()
     return templates.TemplateResponse("reference.html", {
         "request": request,
-        "room_mismatches": None,
-        "door_mismatches": None,
+        "form_submissions": form_submissions,
+        "results": None,
         "download_link": None,
         "excel_link": None,
         "client_file_link": None
     })
 
 
-@app.post("/reference-check", response_class=HTMLResponse)
-async def reference_check_upload(
-    request: Request,
-    ref_file: UploadFile = File(...),
-    client_file: UploadFile = File(...)
-):
+@app.get("/api/get-form-data/{form_id}")
+async def get_form_data_api(form_id: int):
+    """API endpoint to get form data and rooms by ID"""
     try:
-        # Check valid file types
-        if not ref_file.filename.endswith(".dxf") or not client_file.filename.endswith(".dxf"):
+        data = get_form_data_by_id(form_id)
+        if data:
+            return {"success": True, "rooms": data['rooms']}
+        return {"success": False, "error": "Form data not found"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/reference-check", response_class=HTMLResponse)
+async def reference_check_process(
+    request: Request,
+    dxf_file: UploadFile = File(...),
+    reference_data_id: int = Form(...)
+):
+    """Process reference check with uploaded DXF and selected reference data"""
+    try:
+        # Validate file
+        if not dxf_file.filename.lower().endswith(".dxf"):
+            form_submissions = get_all_form_submissions()
             return templates.TemplateResponse("reference.html", {
                 "request": request,
+                "form_submissions": form_submissions,
                 "error": "Only .dxf files are supported.",
-                "room_mismatches": None,
-                "door_mismatches": None,
-                "download_link": None
+                "results": None
             })
-
-        # Read file contents
-        ref_content = await ref_file.read()
-        client_content = await client_file.read()
-
-        # Create temporary files for processing
-        with tempfile.NamedTemporaryFile(suffix=".dxf", delete=False) as ref_temp:
-            ref_temp.write(ref_content)
-            ref_temp_path = ref_temp.name
-
-        with tempfile.NamedTemporaryFile(suffix=".dxf", delete=False) as client_temp:
-            client_temp.write(client_content)
-            client_temp_path = client_temp.name
-
+        
+        # Get reference data from database
+        reference_data = get_form_data_by_id(reference_data_id)
+        if not reference_data:
+            form_submissions = get_all_form_submissions()
+            return templates.TemplateResponse("reference.html", {
+                "request": request,
+                "form_submissions": form_submissions,
+                "error": "Reference data not found.",
+                "results": None
+            })
+        
+        # Read DXF file
+        client_content = await dxf_file.read()
+        
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(suffix=".dxf", delete=False) as temp_file:
+            temp_file.write(client_content)
+            temp_path = temp_file.name
+        
         try:
-            # DXF comparison
-            import ezdxf
-            ref_doc = ezdxf.readfile(ref_temp_path)
-            client_doc = ezdxf.readfile(client_temp_path)
-
-            ref_rooms = extract_room_dimensions(ref_doc)
-            client_rooms = extract_room_dimensions(client_doc)
-            room_mismatches = compare_values(ref_rooms, client_rooms)
-
-            ref_doors = extract_doors(ref_doc)
-            client_doors = extract_doors(client_doc)
-            door_mismatches = compare_values(ref_doors, client_doors)
-
-            # Save updated DXF with visualization
-            with tempfile.NamedTemporaryFile(suffix="_visualized.dxf", delete=False) as updated_temp:
+            # Extract rooms from DXF
+            rooms = extract_room_boundaries(temp_path)
+            texts = extract_block_text_info(temp_path)
+            
+            # Process texts
+            all_texts = []
+            for blk_texts in texts.values():
+                for text in blk_texts:
+                    text["original"] = text["Text"]
+                    text["cleaned"] = clean_text_value(text["Text"])
+                    all_texts.append(text)
+            
+            # Assign texts to rooms
+            for room in rooms:
+                room["texts"] = [t for t in all_texts if check_text_within_room(room, t)]
+            
+            # Convert reference data to submitted_rooms format
+            submitted_rooms = []
+            for room in reference_data['rooms']:
+                submitted_rooms.append({
+                    "name": room['room_name'].lower(),
+                    "width_mm": room['width_mm'],
+                    "height_mm": room['height_mm'],
+                    "width_feet": room['width_feet'],
+                    "width_inches": room['width_inches'],
+                    "height_feet": room['height_feet'],
+                    "height_inches": room['height_inches'],
+                    "block_name": room['unit_name']
+                })
+            
+            # Match rooms
+            matches, unmatched = match_user_rooms_to_dxf(submitted_rooms, rooms)
+            
+            # Generate Excel report
+            excel_content = export_matches_to_excel(matches, unmatched)
+            
+            # Create updated DXF (standard update like in self-check)
+            with tempfile.NamedTemporaryFile(suffix="_updated.dxf", delete=False) as updated_temp:
                 updated_temp_path = updated_temp.name
-
-            visualize_mismatches(client_temp_path, room_mismatches, door_mismatches, updated_temp_path)
+            
+            save_copy_with_changes(temp_path, updated_temp_path, rooms, texts)
             
             with open(updated_temp_path, 'rb') as f:
                 updated_content = f.read()
-
-            # Generate Excel report
-            excel_data = pd.DataFrame({
-                "Room Mismatches": room_mismatches,
-                "Door Mismatches": door_mismatches
-            })
             
-            excel_buffer = io.BytesIO()
-            excel_data.to_excel(excel_buffer, index=False)
-            excel_content = excel_buffer.getvalue()
-
-            # Store in database
+            # Create colored DXF for matches (user input colored like in self-check)
+            colored_content = create_user_input_colored_dxf(temp_path, submitted_rooms, matches)
+            
+            # Store in database with reference filename
+            reference_filename = f"user_input_colored_{dxf_file.filename}"
             history_id = add_history(
                 "Reference Check",
-                ref_file.filename,
-                client_file.filename,
-                client_file.filename.replace('.dxf', '_visualized.dxf'),
-                f"report_{uuid.uuid4().hex}.xlsx",
-                ref_content,
-                client_content,
-                updated_content,
+                reference_filename,
+                dxf_file.filename,
+                f"updated_{dxf_file.filename}",
+                "reference_report.xlsx",
+                colored_content,  # This is the colored DXF (reference file)
+                client_content,   # Original client file
+                updated_content,  # Standard updated DXF
                 excel_content
             )
-
+            
+            # Prepare results
+            results = {
+                "total_rooms": len(rooms),
+                "matched_count": len(matches),
+                "unmatched_count": len(unmatched)
+            }
+            
+            form_submissions = get_all_form_submissions()
             return templates.TemplateResponse("reference.html", {
                 "request": request,
-                "check_type": "Reference Check",
-                "filename": client_file.filename,
-                "rooms": None,
-                "submitted_rooms": None,
-                "matches": None,
-                "room_mismatches": room_mismatches,
-                "door_mismatches": door_mismatches,
-                "download_link": f"/download/modified/{history_id}",
+                "form_submissions": form_submissions,
+                "filename": dxf_file.filename,
+                "results": results,
+                "download_link": f"/download/modified/{history_id}",      # Standard updated DXF
                 "excel_link": f"/download/excel/{history_id}",
-                "client_file_link": f"/download/client/{history_id}"
+                "client_file_link": f"/download/client/{history_id}",     # Original file
+                "reference_link": f"/download/reference/{history_id}"     # Colored DXF based on user input
             })
-
+            
         finally:
-            # Clean up temporary files
-            os.unlink(ref_temp_path)
-            os.unlink(client_temp_path)
+            # Clean up
+            os.unlink(temp_path)
             if 'updated_temp_path' in locals():
                 os.unlink(updated_temp_path)
-
+    
     except Exception as e:
+        form_submissions = get_all_form_submissions()
         return templates.TemplateResponse("reference.html", {
             "request": request,
-            "error": f"Error: {str(e)}",
-            "room_mismatches": None,
-            "door_mismatches": None,
-            "download_link": None
+            "form_submissions": form_submissions,
+            "error": f"Error processing files: {str(e)}",
+            "results": None
         })
-
 
 def feet_inches_to_mm(feet: int, inches: int) -> float:
     return round((feet * 12 + inches) * 25.4, 2)
@@ -1009,7 +1049,13 @@ def analyze_dxf_file(file_path, is_self_check=False):
     }
 
     # Process UNIT-1 inserts
-    unit_inserts = list(doc.modelspace().query('INSERT[name=="UNIT-1"]'))
+    unit_inserts = []
+    for insert in doc.modelspace().query('INSERT'):
+        if insert.dxf.name.startswith('UNIT-'):
+            unit_inserts.append(insert)
+            
+            
+            
     if not unit_inserts:
         print("✗ No UNIT-1 inserts found")
         return None
@@ -1032,7 +1078,7 @@ def analyze_dxf_file(file_path, is_self_check=False):
             continue
 
         # Extract all entities (assuming this function exists in helper.py)
-        insert_entities = extract_all_entities(doc, "UNIT-1", top_mat)
+        insert_entities = extract_all_entities(doc, top_insert.dxf.name, top_mat)
         all_entities_global.extend(insert_entities)
         global_stats["total_entities"] += len(insert_entities)
 
@@ -1043,16 +1089,21 @@ def analyze_dxf_file(file_path, is_self_check=False):
             if entity.dxf.layer.strip() == "A-Room Boundary":
                 geom = entity_to_geometry(entity, mat)
                 if isinstance(geom, Polygon) and geom.is_valid and geom.area > 1:
+                    unit_block_name = top_insert.dxf.name
+                    unit_display_name = unit_block_name.replace('UNIT-', 'Unit-')
                     room_data = {
                         "polygon": geom,
                         "entities_inside": [],
                         "unit_id": top_insert.dxf.handle,
                         "unit_num": insert_idx,
+                        "unit_block_name": unit_block_name,
+    "boundary_handle": handle,
                         "unit_name": f"Unit-{insert_idx}",
                         "boundary_handle": handle,
                         "area": geom.area,
                         "depth": depth,
                         "room_name": "Unknown",
+                        
                         "auto_detected_name": None,
                         "text_detected_name": None,
                         "detection_method": "none",
@@ -1075,7 +1126,7 @@ def analyze_dxf_file(file_path, is_self_check=False):
             continue
 
         # Extract text information (assuming this function exists in helper.py)
-        all_block_texts = extract_block_text_info_for_insert(doc, "UNIT-1", top_mat)
+        all_block_texts = extract_block_text_info_for_insert(doc, top_insert.dxf.name, top_mat)
 
         # Assign entities to rooms (assuming this function exists in helper.py)
         assignment_stats, unassigned_entities = assign_entities_to_rooms(
@@ -1274,5 +1325,5 @@ def reset_self_check_globals():
         "room_info": []
     }
 
-
+init_database()
 init_db()

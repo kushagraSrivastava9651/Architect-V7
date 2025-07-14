@@ -589,8 +589,8 @@ def determine_room_type_by_entities_ultra_fixed(entities_inside, room_area=None,
                     # Extract door tag coordinates
                     tag_point = extract_insert_or_geom(entity, doc)
                     if tag_point:
-                        # Find nearest door line
-                        block_doors = find_door_midpoints_in_block(doc, "UNIT-1")
+                        # Find nearest door lineblock_doors = find_door_midpoints_in_block(docblock_doors = find_door_midpoints_in_block(doc, "UNIT-1")
+                        block_doors = find_door_midpoints_in_block(doc)
                         direct_doors = find_direct_door_lines(doc)
                         all_door_lines = block_doors + direct_doors
 
@@ -658,16 +658,7 @@ def determine_room_type_by_entities_ultra_fixed(entities_inside, room_area=None,
                                     # Create toilet name based on nearest room
                                     toilet_name = f"{room_name} TOILET" if room_name != "Unknown" else "TOILET"
                                     
-                                    result_str = (f"{toilet_name} (Door Tag: ({tag_point[0]:.2f}, {tag_point[1]:.2f}), "
-                                                f"Door Line: ({door_point[0]:.2f}, {door_point[1]:.2f}), "
-                                                f"Tag-to-Door Distance: {nearest_door_line['distance']:.2f}, "
-                                                f"Door Handle: {nearest_door_line['handle']}, "
-                                                f"Nearest Room: ({room['center'][0]:.2f}, {room['center'][1]:.2f}), "
-                                                f"Room Name: {room_name}, "
-                                                f"Room Type: {room_type}, "
-                                                f"Room Size: {room['width']:.2f}x{room['height']:.2f}, "
-                                                f"Door-to-Room Distance: {nearest_room_data['distance']:.2f}, "
-                                                f"Room Handle: {room_handle})")
+                                    result_str = (f"{toilet_name} ")
                                 else:
                                     # Fallback: try to determine room type from boundary
                                     room_type = determine_room_type_from_boundary(room, all_entities, doc, all_rooms)
@@ -740,7 +731,7 @@ def determine_room_type_by_entities_simple_toilet(entities_inside, room_area=Non
                     tag_point = extract_insert_or_geom(entity, doc)
                     if tag_point:
                         # Find nearest door and room
-                        block_doors = find_door_midpoints_in_block(doc, "UNIT-1")
+                        block_doors = find_door_midpoints_in_block(doc, block_name=None)
                         direct_doors = find_direct_door_lines(doc)
                         all_door_lines = block_doors + direct_doors
 
@@ -989,41 +980,46 @@ def find_direct_door_lines(doc):
     return door_data_list
 
 
-def find_door_midpoints_in_block(doc, block_name="UNIT-1"):
-    """Find door midpoints in a specific block"""
+def find_door_midpoints_in_block(doc, block_name=None):
+    """Find door midpoints in all UNIT blocks or a specific block"""
     msp = doc.modelspace()
     door_data_list = []
     
-    print(f"🔍 Searching for INSERT entities of block '{block_name}'")
+    if block_name:
+        # Search for specific block
+        target_blocks = [block_name]
+    else:
+        # Search for all UNIT-* blocks
+        target_blocks = []
+        for insert in msp.query("INSERT"):
+            if insert.dxf.name.startswith('UNIT-'):
+                if insert.dxf.name not in target_blocks:
+                    target_blocks.append(insert.dxf.name)
     
-    # Find all INSERT entities that reference the target block
-    inserts_found = 0
-    for insert in msp.query("INSERT"):
-        if insert.dxf.name.strip().upper() == block_name.upper():
-            inserts_found += 1
-            print(f"📦 Found INSERT #{inserts_found} of block '{block_name}' at {insert.dxf.insert}")
-            
-            # Get the block definition
-            block_def = None
-            for block in doc.blocks:
-                if block.name == block_name:
-                    block_def = block
-                    break
-            
-            if block_def:
-                transform = create_transform_matrix(insert)
-                process_block_entities(block_def, transform, doc, door_data_list)
-            else:
-                print(f"❌ Block definition '{block_name}' not found")
+    print(f"🔍 Searching for INSERT entities of blocks: {target_blocks}")
     
-    if inserts_found == 0:
-        print(f"⚠️ No INSERT entities found for block '{block_name}'")
-        # List available blocks
-        print("📋 Available blocks:")
-        for block_def in doc.blocks:
-            block_name_available = block_def.name
-            if not block_name_available.startswith('*'):  # Skip system blocks
-                print(f"  - {block_name_available}")
+    for block_name in target_blocks:
+        inserts_found = 0
+        for insert in msp.query("INSERT"):
+            if insert.dxf.name.strip().upper() == block_name.upper():
+                inserts_found += 1
+                print(f"📦 Found INSERT #{inserts_found} of block '{block_name}' at {insert.dxf.insert}")
+                
+                # Get the block definition
+                block_def = None
+                for block in doc.blocks:
+                    if block.name == block_name:
+                        block_def = block
+                        break
+                
+                if block_def:
+                    transform = create_transform_matrix(insert)
+                    process_block_entities(block_def, transform, doc, door_data_list)
+                else:
+                    print(f"❌ Block definition '{block_name}' not found")
+        
+        if inserts_found == 0:
+            print(f"⚠️ No INSERT entities found for block '{block_name}'")
     
     return door_data_list
 
